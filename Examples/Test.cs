@@ -18,26 +18,29 @@ namespace MyApplication
         {
             BenchmarkSwitcher.FromAssembly(typeof(Check).Assembly).Run();
         }
-       
+        [IterationSetup]
         public void Setup()
         {
-
+             array = Enumerable.Range(0, 50000000).ToArray();
+            result = array.Chunk(array.Length / 3).Select(a => Task.Run(() => a.Select(a => a * 2)));
+             dublicate = new int[array.Length];
+             options = new ParallelOptions() { MaxDegreeOfParallelism = 3 };
+            index = 0;
         }
+        int[] array;
+        IEnumerable<Task<IEnumerable<int>>> result;
+        ParallelOptions options;
         [Benchmark]
         public void TaskLinq()
         {
-            int[] array = Enumerable.Range(0, 50000000).ToArray();
-            var result = array.Chunk(array.Length / 3).Select(a => Task.Run(() => a.Select(a => a * 2)));
             Task.WaitAll(result.ToArray());
             var save = result.SelectMany(a => a.Result).ToArray();
         }
+        int[] dublicate;
+        int index;
         [Benchmark]
         public void Paraller()
         {
-            int[] array = Enumerable.Range(0, 50000000).ToArray();
-            int[] dublicate = new int[array.Length];
-            var options = new ParallelOptions() { MaxDegreeOfParallelism = 3 };
-            int index = 0;
             Parallel.ForEach(array, options, (a, x) =>
             {
                 dublicate[index++] = a * 2;
